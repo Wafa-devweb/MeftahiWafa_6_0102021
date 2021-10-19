@@ -1,11 +1,13 @@
+// import express..
 const express = require('express');
 // création du routeur avec "express"
 const router = express.Router();
-// controllers qui va permettre d'associer les differents routes
+
+// controller qui va permettre d'associer les differents routes
 const userCtrl = require('../controllers/user');
 
 
-// création des routes
+// création de deux routes post (frontend va aussi envoyé des info)
 router.post('/signup', userCtrl.signup);
 router.post('/login', userCtrl.login);
 

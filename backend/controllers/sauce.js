@@ -1,0 +1,135 @@
+// import du package fs de node qui nous permet de modifier le système de fichiers
+const fs = require('fs');
+// import des données
+const sauce = require('../models/sauce');
+
+// Obtenez toutes les sauces en db
+exports.getAllSauces = (req, res, next) => {
+    sauce.find()
+        .then(newSauce => res.status(200).json(newSauce))
+        .catch(error => res.status(400).json({ error }));
+};
+
+// Obtenir une sauce spécifique (id params)
+exports.getOneSauce = (req, res, next) => {
+    sauce.findOne({ _id: req.params.id })
+        .then(newSauce => res.status(200).json(newSauce))
+        .catch(error => res.status(404).json({ error }));
+};
+
+/*Exports des données et Creation d'une nouvelle sauce 
+1. creation d'une nouvelle constante du modèle schémaSauce à partir de l'objet / nouvelle instance 'newSauce'
+2. insérer les informations necessaire 'imageUrl' ect....
+3. Eregistrement des données de la sauce avec la methode'save' et renvoie la response (201)/(400) */
+exports.createSauce = (req, res, next) => {
+    // objet js sous forme de chaine de caractère/ analser cette chaine qu'on la transforme en objet/ extrai l'objet j.son de 'sauce'
+    const sauceObject = JSON.parse(req.body.sauce);
+    const newSauce = new sauce({ 
+        ...sauceObject,
+        // pour générer l'url de l'image
+       imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
+        likes: 0,
+        dislikes: 0,
+        usersLiked: '',
+        usersDisliked: ''
+    });
+    newSauce.save()
+        .then(() => res.status(201).json({ message: 'Nouvelle sauce insérée avec succès !' }))
+        .catch(error => res.status(400).json({ error }));
+};
+
+// Mettre à jour la sauce existante
+exports.updateSauce = (req, res, next) => {
+    if(req.file) { //Supprimer le dernier enregistré si l'utilisateur charge une nouvelle image
+        sauce.findOne({ _id: req.params.id })
+            .then(newSauce => {
+                const last_filename = newSauce.imageUrl.split('/images/')[1];
+                fs.unlink('images/' + last_filename, () => {});
+            })
+            .catch(error => console.log('Echec de la suppression de l\'ancienne image.'));
+    }
+    setTimeout(() => {
+        const sauceObject = req.file ? {
+        ...JSON.parse(req.body.sauce),
+        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+        } : { ...req.body };
+        sauce.updateOne({ _id: req.params.id }, { ...sauceObject, _id: req.params.id })
+            .then(() => res.status(200).json({ message: 'Objet modifié !'}))
+            .catch(error => res.status(400).json({ error }));
+    }, 250);
+};
+
+// Supprime la sauce
+exports.deleteSauce = (req, res, next) => {
+    sauce.findOne({ _id: req.params.id })
+        .then(newSauce => {
+            const filename = newSauce.imageUrl.split('/images/')[1];
+            fs.unlink('images/' + filename, () => {
+                sauce.deleteOne({ _id: req.params.id })
+                .then(() => res.status(200).json({ message: 'Objet supprimé !'}))
+                .catch(error => res.status(400).json({ error }));
+            });
+        })
+        .catch(error => res.status(500).json({ error }));
+};
+
+// (dis)like sauce
+exports.likeSauce = (req, res, next) => {
+    sauce.findOne({ _id: req.params.id })
+        .then(newSauce => {
+            let i = 0;
+            let tabLikes = []; let tabDislikes = [];
+            let already_liked = 0; let already_disliked = 0;
+            let type_like = req.body.like;
+            let user_id = req.body.userId;
+
+            // Vérifiez si l'utilisateur a déjà (dis)like ça
+            if(newSauce.usersLiked) {
+                tabLikes = JSON.parse(newSauce.usersLiked);
+                while(i < tabLikes.length) {
+                    if(tabLikes[i] == user_id) { 
+                        if(type_like == 0 || type_like == -1) { // Supprimer l'ID utilisateur dans 'usersLikes' si annuler/dislike
+                            tabLikes.splice(i, 1); 
+                            newSauce.likes --;
+                        }
+                        already_liked = 1;
+                    }
+                    i ++;
+                }
+            }
+            if(newSauce.usersDisliked) {
+                tabDislikes = JSON.parse(newSauce.usersDisliked); i = 0;
+                while(i < tabDislikes.length) {
+                    if(tabDislikes[i] == user_id) { 
+                        if(type_like == 0 || type_like == 1) { // Supprimer l'ID utilisateur dans 'usersDislikes' si annuler/like
+                            tabDislikes.splice(i, 1); 
+                            newSauce.dislikes --;
+                        }
+                        already_disliked = 1;
+                    }
+                    i ++;
+                }
+            }
+
+            // Add (dis)like
+            if(type_like == 1 && already_liked == 0) {
+                tabLikes.push(user_id);
+                newSauce.likes ++; 
+            }
+            if(type_like == -1 && already_disliked == 0) {
+                tabDislikes.push(user_id);
+                newSauce.dislikes ++; 
+            }
+
+            sauce.updateOne({ _id: req.params.id }, { 
+                    likes: newSauce.likes, 
+                    dislikes: newSauce.dislikes, 
+                    usersLiked: JSON.stringify(tabLikes), 
+                    usersDisliked: JSON.stringify(tabDislikes)
+                })
+                .then(() => res.status(200).json({ message: 'Updated ! '}))
+                .catch(error => res.status(400).json({ error }));
+
+        })
+        .catch(error => res.status(500).json({ error }));
+};
