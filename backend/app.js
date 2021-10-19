@@ -5,9 +5,9 @@ const mongoose = require('mongoose');
 // import qui donne accès au chemin du système de fichier
 const path = require('path');
 
-/* // Load env variables
+//Load env variables
 require('dotenv').config()
-const db = process.env;*/
+const db = process.env;
 
 // import des routeurs 
 const userRoutes = require('./routes/user');

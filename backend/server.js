@@ -16,8 +16,7 @@ const normalizePort = val => {
 };
 
 const port = normalizePort(process.env.PORT || '3000');
-
-// config ecoute du port 3000
+//config ecoute du port 3000
 app.set('port', port);
 
 // fonction qui recherche les differentes erreurs
