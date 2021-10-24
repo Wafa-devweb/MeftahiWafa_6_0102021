@@ -1,6 +1,6 @@
-// import du package fs de node qui nous permet de modifier le système de fichiers
+// import 
 const fs = require('fs');
-// import des données
+
 const sauce = require('../models/sauce');
 
 // Obtenez toutes les sauces en db
@@ -17,16 +17,13 @@ exports.getOneSauce = (req, res, next) => {
         .catch(error => res.status(404).json({ error }));
 };
 
-/*Exports des données et Creation d'une nouvelle sauce 
-1. creation d'une nouvelle constante du modèle schémaSauce à partir de l'objet / nouvelle instance 'newSauce'
-2. insérer les informations necessaire 'imageUrl' ect....
-3. Eregistrement des données de la sauce avec la methode'save' et renvoie la response (201)/(400) */
+
 exports.createSauce = (req, res, next) => {
-    // objet js sous forme de chaine de caractère/ analser cette chaine qu'on la transforme en objet/ extrai l'objet j.son de 'sauce'
+   
     const sauceObject = JSON.parse(req.body.sauce);
     const newSauce = new sauce({ 
         ...sauceObject,
-        // pour générer l'url de l'image
+       
        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
         likes: 0,
         dislikes: 0,
@@ -40,7 +37,7 @@ exports.createSauce = (req, res, next) => {
 
 // Mettre à jour la sauce existante
 exports.updateSauce = (req, res, next) => {
-    if(req.file) { //Supprimer le dernier enregistré si l'utilisateur charge une nouvelle image
+    if(req.file) { 
         sauce.findOne({ _id: req.params.id })
             .then(newSauce => {
                 const last_filename = newSauce.imageUrl.split('/images/')[1];
@@ -88,7 +85,7 @@ exports.likeSauce = (req, res, next) => {
                 tabLikes = JSON.parse(newSauce.usersLiked);
                 while(i < tabLikes.length) {
                     if(tabLikes[i] == user_id) { 
-                        if(type_like == 0 || type_like == -1) { // Supprimer l'ID utilisateur dans 'usersLikes' si annuler/dislike
+                        if(type_like == 0 || type_like == -1) { 
                             tabLikes.splice(i, 1); 
                             newSauce.likes --;
                         }
@@ -101,7 +98,7 @@ exports.likeSauce = (req, res, next) => {
                 tabDislikes = JSON.parse(newSauce.usersDisliked); i = 0;
                 while(i < tabDislikes.length) {
                     if(tabDislikes[i] == user_id) { 
-                        if(type_like == 0 || type_like == 1) { // Supprimer l'ID utilisateur dans 'usersDislikes' si annuler/like
+                        if(type_like == 0 || type_like == 1) { 
                             tabDislikes.splice(i, 1); 
                             newSauce.dislikes --;
                         }
