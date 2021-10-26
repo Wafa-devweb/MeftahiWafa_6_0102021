@@ -16,7 +16,7 @@ exports.signup = (req, res, next) => {
                 });
             myUser.save()
                 .then(() => res.status(201).json({ message: 'Utilisateur créé.' }))
-                .catch(error => res.status(400).json({ error }));
+                .catch(error => res.status(408).json({ message : 'Existing email: create a new user' })); res.statusMessage = "Email present in the database";res.status(408).end();
             })
             .catch(error => res.status(500).json({ error }));
     } else return res.status(403).json({message: 'Votre mot de passe doit contenir 8 caractères minimum.'})
